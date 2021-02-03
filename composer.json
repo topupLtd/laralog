@@ -1,0 +1,29 @@
+{
+    "name": "topup/laralog",
+    "description": "Log request & response including header, body etc...",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "MD AL AMIN",
+            "email": "m3alamin@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=7.4",
+        "laravel/framework": "^6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Topup\\Logger\\" : "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Topup\\Logger\\Providers\\LoggerServiceProvider"
+            ]
+        }
+    }
+}
