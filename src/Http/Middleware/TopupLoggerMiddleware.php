@@ -22,7 +22,6 @@ class TopupLoggerMiddleware
 
     public function terminate($request, $response)
     {
-        logger(gettype(json_decode($response->getContent())));
         $logger = new Logger();
         $logger->user_id = auth()->id() ?? null;
         $logger->method = $request->method();
