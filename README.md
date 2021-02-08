@@ -44,6 +44,17 @@ $handlerStack->push($logger->log());
 $client = new Client(['handler' => $handlerStack]);
 ```
 
+Or
+```bash
+$history = Middleware::history($this->_guzzleReqResContainer);
+$this->_handlerStack = HandlerStack::create();
+$this->_handlerStack->push($history);
+
+$client = new Client(['handler' => $handlerStack]);
+
+(new LoggerController())->saveLog($this->_guzzleReqResContainer);
+```
+
 5. Apply middlewares for package routes via .env
 
 ```bash
