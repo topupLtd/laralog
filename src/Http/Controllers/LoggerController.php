@@ -45,9 +45,9 @@ class LoggerController extends Controller
         $logger->type = 'outbound';
         $logger->url = $log['req']['url'];
         $logger->request_header = json_encode($log['req']['header']);
-        $logger->response_header = json_encode($log['res']['header']);
-        $logger->request_body = (string)$log['req']['body'];
-        $logger->response_body = (string)$log['res']['body'];
+        $logger->response_header = json_encode($log['res']['header']) ?? 'not found';
+        $logger->request_body = (string) $log['req']['body'];
+        $logger->response_body = (string) $log['res']['body'] ?? 'not found';
         $logger->ip = Request::ip();
         $logger->duration = (double) number_format(microtime(true) - LARAVEL_START, 3);
         $logger->request_time = now();
