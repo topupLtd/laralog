@@ -20,15 +20,16 @@ class LoggerController extends Controller
         $log = [];
         foreach ($guzzleReqResContainer as $transaction) {
 
-            $log['req']['method'] = $transaction['request']->getMethod() ?? 'Unknown';
-            $log['req']['url'] = $transaction['request']->getUri() ?? 'Unknown';
-            $log['req']['header'] = json_encode($transaction['request']->getHeaders()) ?? json_encode(['header' => 'Unknown']);
-            $log['req']['body'] = (string)$transaction['request']->getBody() ?? 'Unknown';
+            $log['req']['method'] = $transaction['request']->getMethod() ?? '';
+            $log['req']['url'] = $transaction['request']->getUri() ?? '';
+            $log['req']['header'] = json_encode($transaction['request']->getHeaders() ?? '');
+            $log['req']['body'] = (string)$transaction['request']->getBody() ?? '';
 
             if ($transaction['response']) {
-                $log['res']['header'] = json_encode($transaction['response']->getHeaders()) ?? json_encode(['header' => 'Unknown']);
-                $log['res']['body'] = (string)$transaction['response']->getBody() ?? 'Unknown';
+                $log['res']['header'] = json_encode($transaction['response']->getHeaders() ?? '');
+                $log['res']['body'] = (string)$transaction['response']->getBody() ?? '';
             } elseif ($transaction['error'] ?? false) {
+                $log['res']['header'] = 'error in api response. Check log';
                 $log['res']['body'] = 'error in api response. Check log';
                 logger($transaction['error'] ?? 'Uncaught error');
             }
@@ -39,20 +40,19 @@ class LoggerController extends Controller
 
     protected function _save($log)
     {
-        $logger = new Logger();
-        $logger->user_id = auth()->id() ?? null;
-        $logger->method = $log['req']['method'];
-        $logger->type = 'outbound';
-        $logger->url = $log['req']['url'];
-        $logger->request_header = json_encode($log['req']['header']);
-        $logger->response_header = json_encode($log['res']['header']) ?? 'not found';
-        $logger->request_body = (string) $log['req']['body'];
-        $logger->response_body = (string) $log['res']['body'] ?? 'not found';
-        $logger->ip = Request::ip();
-        $logger->duration = (double) number_format(microtime(true) - LARAVEL_START, 3);
-        $logger->request_time = now();
-
         try {
+            $logger = new Logger();
+            $logger->user_id = auth()->id() ?? null;
+            $logger->method = $log['req']['method'];
+            $logger->type = 'outbound';
+            $logger->url = $log['req']['url'];
+            $logger->request_header = $log['req']['header'];
+            $logger->response_header = $log['res']['header'];
+            $logger->request_body = $log['req']['body'];
+            $logger->response_body = $log['res']['body'];
+            $logger->ip = Request::ip();
+            $logger->duration = (double)number_format(microtime(true) - LARAVEL_START, 3);
+            $logger->request_time = now();
             $logger->save();
         } catch (Exception $exception) {
             logger()->error('Could not save API log');
