@@ -20,17 +20,17 @@ class LoggerController extends Controller
         $log = [];
         foreach ($guzzleReqResContainer as $transaction) {
 
-            $log['req']['method'] = $transaction['request']->getMethod();
-            $log['req']['url'] = $transaction['request']->getUri();
-            $log['req']['header'] = json_encode($transaction['request']->getHeaders());
-            $log['req']['body'] = (string)$transaction['request']->getBody();
+            $log['req']['method'] = $transaction['request']->getMethod() ?? 'Unknown';
+            $log['req']['url'] = $transaction['request']->getUri() ?? 'Unknown';
+            $log['req']['header'] = json_encode($transaction['request']->getHeaders()) ?? json_encode(['header' => 'Unknown']);
+            $log['req']['body'] = (string)$transaction['request']->getBody() ?? 'Unknown';
 
             if ($transaction['response']) {
-                $log['res']['header'] = json_encode($transaction['response']->getHeaders());
-                $log['res']['body'] = (string)$transaction['response']->getBody();
-            } elseif ($transaction['error']) {
+                $log['res']['header'] = json_encode($transaction['response']->getHeaders()) ?? json_encode(['header' => 'Unknown']);
+                $log['res']['body'] = (string)$transaction['response']->getBody() ?? 'Unknown';
+            } elseif ($transaction['error'] ?? false) {
                 $log['res']['body'] = 'error in api response. Check log';
-                logger($transaction['error']);
+                logger($transaction['error'] ?? 'Uncaught error');
             }
         }
 
@@ -49,7 +49,7 @@ class LoggerController extends Controller
         $logger->request_body = (string) $log['req']['body'];
         $logger->response_body = (string) $log['res']['body'] ?? 'not found';
         $logger->ip = Request::ip();
-        $logger->duration = number_format(microtime(true) - LARAVEL_START, 3);
+        $logger->duration = (double) number_format(microtime(true) - LARAVEL_START, 3);
         $logger->request_time = now();
 
         try {
