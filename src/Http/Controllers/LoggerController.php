@@ -10,7 +10,7 @@ use Topup\Logger\Support\Redactor;
 
 class LoggerController extends Controller
 {
-    const PER_PAGE = 10;
+    const PER_PAGE = 20;
 
     /** what the list shows; headers and bodies (the heavy columns) are fetched per log by show() */
     const LIST_COLUMNS = ['id', 'user_id', 'method', 'type', 'url', 'ip', 'duration', 'request_time'];

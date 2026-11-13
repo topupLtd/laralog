@@ -261,13 +261,6 @@
                             : (in_array($method, ['PUT', 'PATCH'], true) ? 'put' : 'other');
 
                         $url = (string) $log->url;
-                        $urlParts = parse_url($url) ?: [];
-                        $host = isset($urlParts['host'])
-                            ? $urlParts['host'] . (isset($urlParts['port']) ? ':' . $urlParts['port'] : '')
-                            : null;
-                        $path = $host
-                            ? ($urlParts['path'] ?? '/') . (isset($urlParts['query']) ? '?' . $urlParts['query'] : '')
-                            : $url;
 
                         $seconds = (float) $log->duration;
                         $duration = $seconds < 1 ? round($seconds * 1000) . ' ms' : number_format($seconds, 2) . ' s';
@@ -278,7 +271,6 @@
 
                         $meta = array_filter([
                             ucfirst((string) $log->type),
-                            $host,
                             $log->ip,
                             $log->user_id ? 'User ' . $log->user_id : null,
                             '#' . $log->id,
@@ -290,7 +282,7 @@
                                 data-url="{{ route('topup.logger.show', ['id' => $log->id]) }}">
                             <span class="tl-method tl-method--{{ $methodClass }}">{{ $method }}</span>
                             <span class="tl-main">
-                                <span class="tl-path" title="{{ $url }}">{{ $path }}</span>
+                                <span class="tl-path" title="{{ $url }}">{{ $url }}</span>
                                 <span class="tl-meta">{{ implode(' · ', $meta) }}</span>
                             </span>
                             <span class="tl-duration {{ $durationClass }}" title="Duration">{{ $duration }}</span>
