@@ -7,6 +7,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Request;
 use Topup\Logger\Models\Logger;
+use Topup\Logger\Support\Redactor;
 
 class TopupGuzzleLoggerMiddleware
 {
@@ -25,23 +26,10 @@ class TopupGuzzleLoggerMiddleware
                 array $options
             ) use ($handler) {
 
-                $req = [
-                    'header' => $request->getHeaders(),
-                    'body' => $request->getBody(),
-                    'url' => $request->getUri(),
-                    'method' => $request->getMethod(),
-                ];
-
-                $this->_log['req'] = $req;
-
                 $promise = $handler($request, $options);
                 return $promise->then(
-                    function (ResponseInterface $response) {
-                        $res = [
-                            'header' => $response->getHeaders(),
-                            'body' => $response->getBody(),
-                        ];
-                        $this->_log['res'] = $res;
+                    function (ResponseInterface $response) use ($request) {
+                        $this->_log = ['req' => $request, 'res' => $response];
 
                         $this->_save();
 
@@ -52,17 +40,26 @@ class TopupGuzzleLoggerMiddleware
         };
     }
 
+    /**
+     * SECURITY: secrets in headers, bodies and query strings are masked first (see Redactor).
+     */
     protected function _save()
     {
+        /** @var RequestInterface $request */
+        $request = $this->_log['req'];
+        /** @var ResponseInterface $response */
+        $response = $this->_log['res'];
+        $redactor = new Redactor();
+
         $logger = new Logger();
         $logger->user_id = auth()->id() ?? null;
-        $logger->method = $this->_log['req']['method'];
+        $logger->method = $request->getMethod();
         $logger->type = 'outbound';
-        $logger->url = $this->_log['req']['url'];
-        $logger->request_header = json_encode($this->_log['req']['header']);
-        $logger->response_header = json_encode($this->_log['res']['header']);
-        $logger->request_body = (string)$this->_log['req']['body'];
-        $logger->response_body = (string)$this->_log['res']['body'];
+        $logger->url = $redactor->url((string) $request->getUri());
+        $logger->request_header = json_encode($redactor->headers($request->getHeaders()));
+        $logger->response_header = json_encode($redactor->headers($response->getHeaders()));
+        $logger->request_body = $redactor->body((string) $request->getBody(), $request->getHeaderLine('Content-Type'));
+        $logger->response_body = $redactor->body((string) $response->getBody(), $response->getHeaderLine('Content-Type'));
         $logger->ip = Request::ip();
         $logger->duration = number_format(microtime(true) - LARAVEL_START, 3);
         $logger->request_time = now();

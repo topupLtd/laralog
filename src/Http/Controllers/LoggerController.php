@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Exception;
 use Request;
 use Topup\Logger\Models\Logger;
+use Topup\Logger\Support\Redactor;
 
 class LoggerController extends Controller
 {
@@ -15,27 +16,45 @@ class LoggerController extends Controller
         return view('topup-logger::index', compact('logs'));
     }
 
+    /**
+     * Store the transactions recorded by Guzzle's history middleware, one row each.
+     * SECURITY: secrets in headers, bodies and query strings are masked first (see Redactor).
+     */
     public function saveLog($guzzleReqResContainer)
     {
-        $log = [];
+        $redactor = new Redactor();
+
         foreach ($guzzleReqResContainer as $transaction) {
+            $request = $transaction['request'] ?? null;
+            if (!$request) {
+                continue;
+            }
+            $response = $transaction['response'] ?? null;
 
-            $log['req']['method'] = $transaction['request']->getMethod() ?? '';
-            $log['req']['url'] = $transaction['request']->getUri() ?? '';
-            $log['req']['header'] = json_encode($transaction['request']->getHeaders() ?? '');
-            $log['req']['body'] = (string)$transaction['request']->getBody() ?? '';
+            $log = [
+                'req' => [
+                    'method' => $request->getMethod(),
+                    'url' => $redactor->url((string) $request->getUri()),
+                    'header' => json_encode($redactor->headers($request->getHeaders())),
+                    'body' => $redactor->body((string) $request->getBody(), $request->getHeaderLine('Content-Type')),
+                ],
+            ];
 
-            if ($transaction['response']) {
-                $log['res']['header'] = json_encode($transaction['response']->getHeaders() ?? '');
-                $log['res']['body'] = (string)$transaction['response']->getBody() ?? '';
-            } elseif ($transaction['error'] ?? false) {
-                $log['res']['header'] = 'error in api response. Check log';
-                $log['res']['body'] = 'error in api response. Check log';
+            if ($response) {
+                $log['res'] = [
+                    'header' => json_encode($redactor->headers($response->getHeaders())),
+                    'body' => $redactor->body((string) $response->getBody(), $response->getHeaderLine('Content-Type')),
+                ];
+            } else {
+                $log['res'] = [
+                    'header' => 'error in api response. Check log',
+                    'body' => 'error in api response. Check log',
+                ];
                 logger($transaction['error'] ?? 'Uncaught error');
             }
-        }
 
-        $this->_save($log);
+            $this->_save($log);
+        }
     }
 
     protected function _save($log)
