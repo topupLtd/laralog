@@ -10,7 +10,7 @@ namespace Topup\Logger\Support;
  * case with "-", "_", "." and spaces removed, so "Id-Tocken", "tocken_id" and "x-api-key" all
  * match. JSON, form-encoded, XML and plain-text bodies are handled; anything that is not valid
  * UTF-8 (files, images) is replaced by its size. JWTs and "Bearer ..." credentials are masked
- * wherever they appear.
+ * wherever they appear. Bodies longer than topup-logger.max_body_bytes are cut after redaction.
  */
 class Redactor
 {
@@ -36,11 +36,15 @@ class Redactor
     /** @var bool */
     private $logBodies;
 
+    /** @var int */
+    private $maxBodyBytes;
+
     /**
-     * @param string[]|null $extraKeys  more name fragments to treat as secret (default: config)
-     * @param bool|null     $logBodies  false keeps only body sizes (default: config)
+     * @param string[]|null $extraKeys     more name fragments to treat as secret (default: config)
+     * @param bool|null     $logBodies     false keeps only body sizes (default: config)
+     * @param int|null      $maxBodyBytes  longer bodies are cut after redaction, 0 = no limit (default: config)
      */
-    public function __construct(?array $extraKeys = null, $logBodies = null)
+    public function __construct(?array $extraKeys = null, $logBodies = null, $maxBodyBytes = null)
     {
         if ($extraKeys === null) {
             $extraKeys = (array) self::config('topup-logger.redact_keys', []);
@@ -48,9 +52,13 @@ class Redactor
         if ($logBodies === null) {
             $logBodies = self::config('topup-logger.log_bodies', true);
         }
+        if ($maxBodyBytes === null) {
+            $maxBodyBytes = self::config('topup-logger.max_body_bytes', 0);
+        }
 
         $this->extraKeys = array_values(array_filter(array_map([$this, 'normalize'], $extraKeys)));
         $this->logBodies = filter_var($logBodies, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false;
+        $this->maxBodyBytes = max(0, (int) $maxBodyBytes);
     }
 
     public function isSensitiveKey($name)
@@ -116,6 +124,25 @@ class Redactor
      * @return string
      */
     public function body($body, $contentType = '')
+    {
+        // cut only after redacting: a secret split by the cut could no longer be recognised
+        return $this->limit($this->redactBody($body, $contentType));
+    }
+
+    private function limit($text)
+    {
+        if ($this->maxBodyBytes === 0 || strlen($text) <= $this->maxBodyBytes) {
+            return $text;
+        }
+
+        $cut = function_exists('mb_strcut')
+            ? mb_strcut($text, 0, $this->maxBodyBytes, 'UTF-8') // never splits a multi-byte character
+            : substr($text, 0, $this->maxBodyBytes);
+
+        return $cut . "\n[truncated, " . strlen($text) . ' bytes in total]';
+    }
+
+    private function redactBody($body, $contentType)
     {
         $body = (string) $body;
         if ($body === '') {

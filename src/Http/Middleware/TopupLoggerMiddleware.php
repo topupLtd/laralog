@@ -27,6 +27,11 @@ class TopupLoggerMiddleware
      */
     public function terminate($request, $response)
     {
+        // never log the log viewer: each view would store the page (and the logs on it) as a new log
+        if ($request->routeIs('topup.logger', 'topup.logger.*')) {
+            return;
+        }
+
         $redactor = new Redactor();
         $responseHeaders = isset($response->headers) ? $response->headers : null;
         $responseBody = method_exists($response, 'getContent') ? $response->getContent() : '';

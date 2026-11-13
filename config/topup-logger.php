@@ -11,4 +11,10 @@ return [
 
     // false stores only the size of request/response bodies, never their content
     'log_bodies' => env('TOPUP_LOGGER_LOG_BODIES', true),
+
+    // bodies longer than this many bytes are cut (after redaction) and marked as truncated; 0 = no limit
+    'max_body_bytes' => (int) env('TOPUP_LOGGER_MAX_BODY_BYTES', 0),
+
+    // "php artisan topup-logger:prune" deletes logs older than this many days
+    'prune_days' => (int) env('TOPUP_LOGGER_PRUNE_DAYS', 30),
 ];

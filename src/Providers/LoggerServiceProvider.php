@@ -3,6 +3,7 @@
 namespace Topup\Logger\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Topup\Logger\Console\PruneCommand;
 use Topup\Logger\Http\Middleware\TopupLoggerMiddleware;
 
 class LoggerServiceProvider extends ServiceProvider
@@ -14,6 +15,10 @@ class LoggerServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../../resources/views', 'topup-logger');
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
         $this->mergeConfigFrom(__DIR__ . '/../../config/topup-logger.php', 'topup-logger');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([PruneCommand::class]);
+        }
     }
 
     public function register()

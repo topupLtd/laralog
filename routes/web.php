@@ -10,6 +10,9 @@ if($middlewares) {
 
 Route::group(['middleware' => $middlewares], function(){
     Route::get('/topup-logger', 'Topup\Logger\Http\Controllers\LoggerController@index')->name("topup.logger");
+    Route::get('/topup-logger/{id}', 'Topup\Logger\Http\Controllers\LoggerController@show')
+        ->where('id', '[0-9]+')
+        ->name("topup.logger.show");
 });
 
 
