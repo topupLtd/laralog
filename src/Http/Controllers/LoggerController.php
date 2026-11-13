@@ -15,7 +15,7 @@ class LoggerController extends Controller
     /** what the list shows; headers and bodies (the heavy columns) are fetched per log by show() */
     const LIST_COLUMNS = ['id', 'user_id', 'method', 'type', 'url', 'ip', 'duration', 'request_time'];
 
-    const DETAIL_COLUMNS = ['id', 'request_header', 'request_body', 'response_header', 'response_body'];
+    const DETAIL_COLUMNS = ['id', 'url', 'request_header', 'request_body', 'response_header', 'response_body'];
 
     /**
      * Newest logs first, paged by id ("?before=<id>" / "?after=<id>") rather than OFFSET, so any
